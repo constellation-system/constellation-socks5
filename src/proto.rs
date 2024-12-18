@@ -757,7 +757,7 @@ pub fn prepare_gssapi(
         .map_err(|err| SOCKS5Error::GSSAPIError { error: err })?;
 
     Ok(ClientCtx::new(
-        cred,
+        Some(cred),
         service,
         CtxFlags::GSS_C_MUTUAL_FLAG,
         Some(&GSS_MECH_KRB5)
