@@ -19,6 +19,7 @@
 [package]
 name = "constellation-socks5"
 description = "SOCKS5 protocol implementation for the Constellation distributed systems platform"
+repository = "https://github.com/constellation-system/constellation-socks5"
 version = "0.0.0"
 authors = [ "Eric McCorkle <eric.mccorkle@jhuapl.edu>" ]
 rust-version = "1.81"
@@ -29,3 +30,44 @@ exclude = [
     ".gitignore"
 ]
 edition = "2018"
+
+[features]
+default = ["gssapi", "log", "openssl", "unix"]
+gssapi = [
+    "dep:libgssapi",
+    "constellation-auth/gssapi",
+    "constellation-common/gssapi",
+    "constellation-streams/gssapi"
+]
+log = [
+    "dep:log",
+    "constellation-auth/log",
+    "constellation-common/log",
+    "constellation-streams/log"
+]
+openssl = [
+    "constellation-auth/openssl",
+    "constellation-common/openssl",
+    "constellation-streams/openssl"
+]
+openssl-vendored = [
+    "constellation-auth/openssl-vendored",
+    "constellation-common/openssl-vendored",
+    "constellation-streams/openssl-vendored"
+]
+unix = [
+    "constellation-auth/unix",
+    "constellation-common/unix",
+    "constellation-streams/unix"
+]
+
+[dependencies]
+constellation-auth = { git = "https://github.com/constellation-system/constellation-auth.git", branch = "devel", default-features = false }
+constellation-common = { git = "https://github.com/constellation-system/constellation-common.git", branch = "devel", default-features = false }
+constellation-streams = { git = "https://github.com/constellation-system/constellation-streams.git", branch = "devel", default-features = false }
+libgssapi = { version = "0.8", optional = true }
+log = { version = "0.4", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+env_logger = { version = "0.10" }
