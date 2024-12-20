@@ -62,9 +62,9 @@ unix = [
 ]
 
 [dependencies]
-constellation-auth = { git = "https://github.com/constellation-system/constellation-auth.git", branch = "devel", default-features = false }
-constellation-common = { git = "https://github.com/constellation-system/constellation-common.git", branch = "devel", default-features = false }
-constellation-streams = { git = "https://github.com/constellation-system/constellation-streams.git", branch = "devel", default-features = false }
+constellation-auth = { git = "https://github.com/constellation-system/constellation-auth.git", branch = "project/tech-debt", default-features = false }
+constellation-common = { git = "https://github.com/constellation-system/constellation-common.git", branch = "project/tech-debt", default-features = false }
+constellation-streams = { git = "https://github.com/constellation-system/constellation-streams.git", branch = "project/tech-debt", default-features = false }
 libgssapi = { version = "0.8", optional = true }
 log = { version = "0.4", optional = true }
 serde = { version = "1.0", features = ["derive"] }
