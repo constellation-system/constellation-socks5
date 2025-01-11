@@ -68,7 +68,7 @@ constellation-common = { git = "https://github.com/constellation-system/constell
 constellation-streams = { git = "https://github.com/constellation-system/constellation-streams.git", branch = "project/tech-debt", default-features = false }
 # ISSUE #4: GSSAPI versions pinned due to requirement to use nightly-07-21-2024
 libgssapi = { version = "=0.8.1", optional = true }
-libgssapi-sys = { version = "=0.3.1", optional = true }
+libgssapi-sys = { version = "=0.3.2", optional = true }
 log = { version = "0.4", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 
