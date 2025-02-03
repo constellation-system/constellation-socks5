@@ -164,8 +164,10 @@ impl<Inner> Credentials for SOCKS5Stream<Inner>
 where
     Inner: Read + Write
 {
-    type Cred<'a> = Infallible
-    where Self: 'a;
+    type Cred<'a>
+        = Infallible
+    where
+        Self: 'a;
     type CredError = Infallible;
 
     #[inline]
@@ -178,8 +180,10 @@ impl<Inner> CredentialsMut for SOCKS5Stream<Inner>
 where
     Inner: Read + Write
 {
-    type Cred<'a> = Infallible
-    where Self: 'a;
+    type Cred<'a>
+        = Infallible
+    where
+        Self: 'a;
     type CredError = Infallible;
 
     #[inline]
