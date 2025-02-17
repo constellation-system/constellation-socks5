@@ -164,14 +164,11 @@ impl<Inner> Credentials for SOCKS5Stream<Inner>
 where
     Inner: Read + Write
 {
-    type Cred<'a>
-        = Infallible
-    where
-        Self: 'a;
+    type Cred = Infallible;
     type CredError = Infallible;
 
     #[inline]
-    fn creds(&self) -> Result<Option<Self::Cred<'_>>, Self::CredError> {
+    fn creds(&self) -> Result<Option<Self::Cred>, Self::CredError> {
         Ok(None)
     }
 }
@@ -180,14 +177,11 @@ impl<Inner> CredentialsMut for SOCKS5Stream<Inner>
 where
     Inner: Read + Write
 {
-    type Cred<'a>
-        = Infallible
-    where
-        Self: 'a;
+    type Cred = Infallible;
     type CredError = Infallible;
 
     #[inline]
-    fn creds(&mut self) -> Result<Option<Self::Cred<'_>>, Self::CredError> {
+    fn creds(&mut self) -> Result<Option<Self::Cred>, Self::CredError> {
         <Self as Credentials>::creds(self)
     }
 }
