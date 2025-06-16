@@ -40,8 +40,11 @@ use constellation_common::net::DatagramXfrm;
 use constellation_common::net::DatagramXfrmCreateParam;
 use constellation_common::net::IPEndpoint;
 use constellation_common::net::IPEndpointAddr;
+use constellation_streams::channels::PollChannel;
 #[cfg(feature = "gssapi")]
 use libgssapi::context::ClientCtx;
+use mio::Registry;
+use mio::Token;
 
 #[cfg(feature = "gssapi")]
 use crate::error::SOCKS5Error;
@@ -100,6 +103,27 @@ pub struct SOCKS5Param<Param, PeerAddr> {
     datagram: Param,
     /// Proxy address.
     proxy: PeerAddr
+}
+
+impl<Stream> PollChannel for SOCKS5Stream<Stream>
+where
+    Stream: PollChannel + Read + Write
+{
+    fn register(
+        &mut self,
+        registry: &Registry,
+        token: Token
+    ) -> Result<(), std::io::Error> {
+        match self {
+            SOCKS5Stream::Passthru { stream } => {
+                stream.register(registry, token)
+            }
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => {
+                stream.register(registry, token)
+            }
+        }
+    }
 }
 
 impl<Inner> DatagramXfrmCreateParam for SOCKS5UDPXfrm<Inner>
