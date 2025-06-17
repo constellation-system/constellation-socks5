@@ -40,9 +40,10 @@ use constellation_common::net::DatagramXfrm;
 use constellation_common::net::DatagramXfrmCreateParam;
 use constellation_common::net::IPEndpoint;
 use constellation_common::net::IPEndpointAddr;
-use constellation_streams::channels::PollChannel;
 #[cfg(feature = "gssapi")]
 use libgssapi::context::ClientCtx;
+use mio::event::Source;
+use mio::Interest;
 use mio::Registry;
 use mio::Token;
 
@@ -105,23 +106,52 @@ pub struct SOCKS5Param<Param, PeerAddr> {
     proxy: PeerAddr
 }
 
-impl<Stream> PollChannel for SOCKS5Stream<Stream>
+impl<Stream> Source for SOCKS5Stream<Stream>
 where
-    Stream: PollChannel + Read + Write
+    Stream: Source + Read + Write
 {
     fn register(
         &mut self,
         registry: &Registry,
-        token: Token
-    ) -> Result<(), std::io::Error> {
+        token: Token,
+        interests: Interest
+    ) -> Result<(), Error> {
         match self {
             SOCKS5Stream::Passthru { stream } => {
-                stream.register(registry, token)
+                stream.register(registry, token, interests)
             }
             #[cfg(feature = "gssapi")]
             SOCKS5Stream::GSSAPI { stream, .. } => {
-                stream.register(registry, token)
+                stream.register(registry, token, interests)
             }
+        }
+    }
+
+    fn reregister(
+        &mut self,
+        registry: &Registry,
+        token: Token,
+        interests: Interest
+    ) -> Result<(), Error> {
+        match self {
+            SOCKS5Stream::Passthru { stream } => {
+                stream.reregister(registry, token, interests)
+            }
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => {
+                stream.reregister(registry, token, interests)
+            }
+        }
+    }
+
+    fn deregister(
+        &mut self,
+        registry: &Registry
+    ) -> Result<(), Error> {
+        match self {
+            SOCKS5Stream::Passthru { stream } => stream.deregister(registry),
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => stream.deregister(registry)
         }
     }
 }
