@@ -23,6 +23,7 @@ use std::fmt::Formatter;
 use std::io::Error;
 
 use constellation_common::error::ErrorScope;
+use constellation_common::error::RecoverableError;
 use constellation_common::error::ScopedError;
 
 /// Errors that can occur in the SOCKS5 negotiation protocol.
@@ -157,6 +158,26 @@ pub enum SOCKS5WrapError {
     TooShort,
     /// Mutex was poisoned.
     MutexPoison
+}
+
+impl RecoverableError for SOCKS5Error {
+    type Completable = ();
+    type Permanent = Self;
+
+    #[inline]
+    fn split(self) -> (Option<()>, Option<Self>) {
+        match self {
+            SOCKS5Error::IOError { error } => {
+                let (completable, permanent) = error.split();
+
+                (
+                    completable,
+                    permanent.map(|err| SOCKS5Error::IOError { error: err })
+                )
+            }
+            out => (None, Some(out))
+        }
+    }
 }
 
 impl<Inner> ScopedError for SOCKS5UDPError<Inner>
