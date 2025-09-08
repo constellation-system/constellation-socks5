@@ -392,7 +392,7 @@ pub fn write_cmd<S>(
 ) -> Result<(), SOCKS5Error>
 where
     S: Write {
-    match target.ip_endpoint() {
+    match target.ip_addr() {
         IPEndpointAddr::Addr(addr) => write_cmd_ip(
             stream,
             #[cfg(feature = "gssapi")]
@@ -1030,7 +1030,7 @@ pub fn prepare_udp_payload(
 ) -> Result<Vec<u8>, SOCKS5WrapError> {
     let port = endpoint.port();
 
-    match endpoint.ip_endpoint() {
+    match endpoint.ip_addr() {
         IPEndpointAddr::Addr(IpAddr::V4(addr)) => {
             let mut buf = Vec::with_capacity(data.len() + 10);
 

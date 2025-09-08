@@ -371,7 +371,7 @@ where
         &self,
         addr: &IPEndpoint
     ) -> Result<usize, Inner::SizeError> {
-        let header = match addr.ip_endpoint() {
+        let header = match addr.ip_addr() {
             IPEndpointAddr::Addr(IpAddr::V4(_)) => 10,
             IPEndpointAddr::Addr(IpAddr::V6(_)) => 22,
             IPEndpointAddr::Name(name) => 7 + name.len()
