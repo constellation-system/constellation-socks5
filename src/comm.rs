@@ -109,6 +109,19 @@ pub struct SOCKS5Param<Param, PeerAddr> {
     proxy: PeerAddr
 }
 
+impl<Stream> SOCKS5Stream<Stream>
+where
+    Stream: Source + Read + Write
+{
+    pub fn take(self) -> Stream {
+        match self {
+            SOCKS5Stream::Passthru { stream, .. } => stream,
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => stream
+        }
+    }
+}
+
 impl<Stream> Source for SOCKS5Stream<Stream>
 where
     Stream: Source + Read + Write
