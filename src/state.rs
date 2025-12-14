@@ -37,6 +37,7 @@ use std::sync::Mutex;
 
 use constellation_common::net::DatagramXfrm;
 use constellation_common::net::IPEndpoint;
+use constellation_common::net::IPEndpointAddr;
 use constellation_streams::state_machine::OnceMachineAction;
 use constellation_streams::state_machine::RawMachineState;
 use constellation_streams::state_machine::RawOnceMachineState;
@@ -164,16 +165,21 @@ impl SOCKS5Result {
     #[inline]
     pub fn wrap_stream<Stream>(
         self,
-        stream: Stream
+        stream: Stream,
+        addr: IPEndpoint
     ) -> SOCKS5Stream<Stream>
     where
         Stream: Read + Write {
         match self.ctx {
             Some(ctx) => SOCKS5Stream::GSSAPI {
                 ctx: ctx,
-                stream: stream
+                stream: stream,
+                peer_addr: addr
             },
-            None => SOCKS5Stream::Passthru { stream: stream }
+            None => SOCKS5Stream::Passthru {
+                stream: stream,
+                peer_addr: addr
+            }
         }
     }
 
