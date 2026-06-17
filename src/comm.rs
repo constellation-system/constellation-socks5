@@ -234,7 +234,7 @@ impl<Param, PeerAddr> SOCKS5Param<Param, PeerAddr> {
 
 impl<Inner> Session for SOCKS5Stream<Inner>
 where
-    Inner: Session
+    Inner: Session + Read + Write
 {
     type LocalAddr = Inner::LocalAddr;
     type PeerAddr = IPEndpoint;
