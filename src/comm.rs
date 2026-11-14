@@ -358,10 +358,8 @@ where
         match self {
             #[cfg(feature = "gssapi")]
             SOCKS5Stream::GSSAPI { ctx, stream, .. } => {
-                let msg =
-                    proto::write_gssapi_payload(ctx, buf).map_err(|err| {
-                        Error::other(err.to_string())
-                    })?;
+                let msg = proto::write_gssapi_payload(ctx, buf)
+                    .map_err(|err| Error::other(err.to_string()))?;
 
                 stream.write_all(&msg)?;
 
@@ -378,10 +376,8 @@ where
         match self {
             #[cfg(feature = "gssapi")]
             SOCKS5Stream::GSSAPI { ctx, stream, .. } => {
-                let msg =
-                    proto::write_gssapi_payload(ctx, buf).map_err(|err| {
-                        Error::other(err.to_string())
-                    })?;
+                let msg = proto::write_gssapi_payload(ctx, buf)
+                    .map_err(|err| Error::other(err.to_string()))?;
 
                 stream.write_all(&msg)
             }
