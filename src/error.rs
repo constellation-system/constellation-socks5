@@ -22,6 +22,7 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;
 
+use constellation_common::error::CompletableIOError;
 use constellation_common::error::ErrorScope;
 use constellation_common::error::RecoverableError;
 use constellation_common::error::ScopedError;
@@ -161,11 +162,11 @@ pub enum SOCKS5WrapError {
 }
 
 impl RecoverableError for SOCKS5Error {
-    type Completable = ();
+    type Completable = CompletableIOError;
     type Permanent = Self;
 
     #[inline]
-    fn split(self) -> (Option<()>, Option<Self>) {
+    fn split(self) -> (Option<CompletableIOError>, Option<Self>) {
         match self {
             SOCKS5Error::IOError { error } => {
                 let (completable, permanent) = error.split();

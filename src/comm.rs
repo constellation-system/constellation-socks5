@@ -24,8 +24,6 @@ use std::convert::Infallible;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;
-#[cfg(feature = "gssapi")]
-use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 use std::net::IpAddr;
@@ -335,7 +333,7 @@ where
                 let msg = proto::parse_gssapi_payload(stream, ctx).map_err(
                     |err| match err {
                         SOCKS5Error::IOError { error } => error,
-                        err => Error::new(ErrorKind::Other, err.to_string())
+                        err => Error::other(err.to_string())
                     }
                 )?;
                 let len = msg.len();
@@ -362,7 +360,7 @@ where
             SOCKS5Stream::GSSAPI { ctx, stream, .. } => {
                 let msg =
                     proto::write_gssapi_payload(ctx, buf).map_err(|err| {
-                        Error::new(ErrorKind::Other, err.to_string())
+                        Error::other(err.to_string())
                     })?;
 
                 stream.write_all(&msg)?;
@@ -382,7 +380,7 @@ where
             SOCKS5Stream::GSSAPI { ctx, stream, .. } => {
                 let msg =
                     proto::write_gssapi_payload(ctx, buf).map_err(|err| {
-                        Error::new(ErrorKind::Other, err.to_string())
+                        Error::other(err.to_string())
                     })?;
 
                 stream.write_all(&msg)

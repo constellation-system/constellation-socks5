@@ -27,7 +27,6 @@
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::io::Error;
-use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 #[cfg(feature = "gssapi")]
@@ -339,10 +338,7 @@ impl RawMachineState for SOCKS5State {
                                    "but no config is present"));
 
                     Err(SOCKS5Error::IOError {
-                        error: Error::new(
-                            ErrorKind::Other,
-                            "internal state machine error"
-                        )
+                        error: Error::other("internal state machine error")
                     })
                 }
             },
@@ -367,10 +363,7 @@ impl RawMachineState for SOCKS5State {
                                    "but no config is present"));
 
                     Err(SOCKS5Error::IOError {
-                        error: Error::new(
-                            ErrorKind::Other,
-                            "internal state machine error"
-                        )
+                        error: Error::other("internal state machine error")
                     })
                 }
             },
@@ -499,10 +492,7 @@ impl RawMachineState for SOCKS5State {
                                    "but no config is present"));
 
                         Err(SOCKS5Error::IOError {
-                            error: Error::new(
-                                ErrorKind::Other,
-                                "internal state machine error"
-                            )
+                            error: Error::other("internal state machine error")
                         })
                     }
                 }
@@ -532,10 +522,7 @@ impl RawMachineState for SOCKS5State {
                                    "but no config is present"));
 
                     Err(SOCKS5Error::IOError {
-                        error: Error::new(
-                            ErrorKind::Other,
-                            "internal state machine error"
-                        )
+                        error: Error::other("internal state machine error")
                     })
                 }
             },

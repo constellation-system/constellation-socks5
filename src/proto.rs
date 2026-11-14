@@ -18,7 +18,6 @@
 
 //! Low-level protocol encoding functions.
 use std::io::Error;
-use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 use std::net::IpAddr;
@@ -579,10 +578,7 @@ where
                             error!(target: "socks5-protocol",
                                    "impossible case: reply buffer too short");
 
-                            Err(Error::new(
-                                ErrorKind::Other,
-                                "internal protocol error"
-                            ))
+                            Err(Error::other("internal protocol error"))
                         }
                     }
                     .map_err(|err| SOCKS5Error::IOError { error: err })?;
@@ -594,10 +590,7 @@ where
                             error!(target: "socks5-protocol",
                                    "impossible case: reply buffer too short");
 
-                            Err(Error::new(
-                                ErrorKind::Other,
-                                "internal protocol error"
-                            ))
+                            Err(Error::other("internal protocol error"))
                         }
                     }
                     .map_err(|err| SOCKS5Error::IOError { error: err })?;
