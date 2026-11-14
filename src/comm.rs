@@ -1,4 +1,4 @@
-// Copyright © 2024-25 The Johns Hopkins Applied Physics Laboratory LLC.
+// Copyright © 2024-26 The Johns Hopkins Applied Physics Laboratory LLC.
 //
 // This program is free software: you can redistribute it and/or
 // modify it under the terms of the GNU Affero General Public License,
@@ -24,8 +24,6 @@ use std::convert::Infallible;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;
-#[cfg(feature = "gssapi")]
-use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 use std::net::IpAddr;
@@ -40,8 +38,13 @@ use constellation_common::net::DatagramXfrm;
 use constellation_common::net::DatagramXfrmCreateParam;
 use constellation_common::net::IPEndpoint;
 use constellation_common::net::IPEndpointAddr;
+use constellation_common::net::Session;
 #[cfg(feature = "gssapi")]
 use libgssapi::context::ClientCtx;
+use mio::event::Source;
+use mio::Interest;
+use mio::Registry;
+use mio::Token;
 
 #[cfg(feature = "gssapi")]
 use crate::error::SOCKS5Error;
@@ -84,12 +87,14 @@ pub enum SOCKS5Stream<Stream: Read + Write> {
         /// GSSAPI context.
         ctx: ClientCtx,
         /// The raw connected stream.
-        stream: Stream
+        stream: Stream,
+        peer_addr: IPEndpoint
     },
     /// Passthrough stream, no GSSAPI.
     Passthru {
         /// The connected stream.
-        stream: Stream
+        stream: Stream,
+        peer_addr: IPEndpoint
     }
 }
 
@@ -100,6 +105,71 @@ pub struct SOCKS5Param<Param, PeerAddr> {
     datagram: Param,
     /// Proxy address.
     proxy: PeerAddr
+}
+
+impl<Stream> SOCKS5Stream<Stream>
+where
+    Stream: Source + Read + Write
+{
+    pub fn take(self) -> Stream {
+        match self {
+            SOCKS5Stream::Passthru { stream, .. } => stream,
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => stream
+        }
+    }
+}
+
+impl<Stream> Source for SOCKS5Stream<Stream>
+where
+    Stream: Source + Read + Write
+{
+    fn register(
+        &mut self,
+        registry: &Registry,
+        token: Token,
+        interests: Interest
+    ) -> Result<(), Error> {
+        match self {
+            SOCKS5Stream::Passthru { stream, .. } => {
+                stream.register(registry, token, interests)
+            }
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => {
+                stream.register(registry, token, interests)
+            }
+        }
+    }
+
+    fn reregister(
+        &mut self,
+        registry: &Registry,
+        token: Token,
+        interests: Interest
+    ) -> Result<(), Error> {
+        match self {
+            SOCKS5Stream::Passthru { stream, .. } => {
+                stream.reregister(registry, token, interests)
+            }
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => {
+                stream.reregister(registry, token, interests)
+            }
+        }
+    }
+
+    fn deregister(
+        &mut self,
+        registry: &Registry
+    ) -> Result<(), Error> {
+        match self {
+            SOCKS5Stream::Passthru { stream, .. } => {
+                stream.deregister(registry)
+            }
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => stream.deregister(registry)
+        }
+    }
 }
 
 impl<Inner> DatagramXfrmCreateParam for SOCKS5UDPXfrm<Inner>
@@ -157,6 +227,32 @@ impl<Param, PeerAddr> SOCKS5Param<Param, PeerAddr> {
     #[inline]
     pub fn take(self) -> (Param, PeerAddr) {
         (self.datagram, self.proxy)
+    }
+}
+
+impl<Inner> Session for SOCKS5Stream<Inner>
+where
+    Inner: Session + Read + Write
+{
+    type LocalAddr = Inner::LocalAddr;
+    type PeerAddr = IPEndpoint;
+
+    #[inline]
+    fn local_addr(&self) -> Result<Self::LocalAddr, Error> {
+        match self {
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { stream, .. } => stream.local_addr(),
+            SOCKS5Stream::Passthru { stream, .. } => stream.local_addr()
+        }
+    }
+
+    #[inline]
+    fn peer_addr(&self) -> Result<IPEndpoint, Error> {
+        match self {
+            #[cfg(feature = "gssapi")]
+            SOCKS5Stream::GSSAPI { peer_addr, .. } => Ok(peer_addr.clone()),
+            SOCKS5Stream::Passthru { peer_addr, .. } => Ok(peer_addr.clone())
+        }
     }
 }
 
@@ -233,11 +329,11 @@ where
     ) -> Result<usize, Error> {
         match self {
             #[cfg(feature = "gssapi")]
-            SOCKS5Stream::GSSAPI { ctx, stream } => {
+            SOCKS5Stream::GSSAPI { ctx, stream, .. } => {
                 let msg = proto::parse_gssapi_payload(stream, ctx).map_err(
                     |err| match err {
                         SOCKS5Error::IOError { error } => error,
-                        err => Error::new(ErrorKind::Other, err.to_string())
+                        err => Error::other(err.to_string())
                     }
                 )?;
                 let len = msg.len();
@@ -246,7 +342,7 @@ where
 
                 Ok(len)
             }
-            SOCKS5Stream::Passthru { stream } => stream.read(buf)
+            SOCKS5Stream::Passthru { stream, .. } => stream.read(buf)
         }
     }
 }
@@ -261,17 +357,15 @@ where
     ) -> Result<usize, Error> {
         match self {
             #[cfg(feature = "gssapi")]
-            SOCKS5Stream::GSSAPI { ctx, stream } => {
-                let msg =
-                    proto::write_gssapi_payload(ctx, buf).map_err(|err| {
-                        Error::new(ErrorKind::Other, err.to_string())
-                    })?;
+            SOCKS5Stream::GSSAPI { ctx, stream, .. } => {
+                let msg = proto::write_gssapi_payload(ctx, buf)
+                    .map_err(|err| Error::other(err.to_string()))?;
 
                 stream.write_all(&msg)?;
 
                 Ok(buf.len())
             }
-            SOCKS5Stream::Passthru { stream } => stream.write(buf)
+            SOCKS5Stream::Passthru { stream, .. } => stream.write(buf)
         }
     }
 
@@ -281,15 +375,13 @@ where
     ) -> Result<(), Error> {
         match self {
             #[cfg(feature = "gssapi")]
-            SOCKS5Stream::GSSAPI { ctx, stream } => {
-                let msg =
-                    proto::write_gssapi_payload(ctx, buf).map_err(|err| {
-                        Error::new(ErrorKind::Other, err.to_string())
-                    })?;
+            SOCKS5Stream::GSSAPI { ctx, stream, .. } => {
+                let msg = proto::write_gssapi_payload(ctx, buf)
+                    .map_err(|err| Error::other(err.to_string()))?;
 
                 stream.write_all(&msg)
             }
-            SOCKS5Stream::Passthru { stream } => stream.write_all(buf)
+            SOCKS5Stream::Passthru { stream, .. } => stream.write_all(buf)
         }
     }
 
@@ -298,7 +390,7 @@ where
         match self {
             #[cfg(feature = "gssapi")]
             SOCKS5Stream::GSSAPI { stream, .. } => stream.flush(),
-            SOCKS5Stream::Passthru { stream } => stream.flush()
+            SOCKS5Stream::Passthru { stream, .. } => stream.flush()
         }
     }
 }
@@ -317,7 +409,7 @@ where
         &self,
         addr: &IPEndpoint
     ) -> Result<usize, Inner::SizeError> {
-        let header = match addr.ip_endpoint() {
+        let header = match addr.ip_addr() {
             IPEndpointAddr::Addr(IpAddr::V4(_)) => 10,
             IPEndpointAddr::Addr(IpAddr::V6(_)) => 22,
             IPEndpointAddr::Name(name) => 7 + name.len()

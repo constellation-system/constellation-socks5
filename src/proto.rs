@@ -1,4 +1,4 @@
-// Copyright © 2024-25 The Johns Hopkins Applied Physics Laboratory LLC.
+// Copyright © 2024-26 The Johns Hopkins Applied Physics Laboratory LLC.
 //
 // This program is free software: you can redistribute it and/or
 // modify it under the terms of the GNU Affero General Public License,
@@ -18,7 +18,6 @@
 
 //! Low-level protocol encoding functions.
 use std::io::Error;
-use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 use std::net::IpAddr;
@@ -392,7 +391,7 @@ pub fn write_cmd<S>(
 ) -> Result<(), SOCKS5Error>
 where
     S: Write {
-    match target.ip_endpoint() {
+    match target.ip_addr() {
         IPEndpointAddr::Addr(addr) => write_cmd_ip(
             stream,
             #[cfg(feature = "gssapi")]
@@ -579,10 +578,7 @@ where
                             error!(target: "socks5-protocol",
                                    "impossible case: reply buffer too short");
 
-                            Err(Error::new(
-                                ErrorKind::Other,
-                                "internal protocol error"
-                            ))
+                            Err(Error::other("internal protocol error"))
                         }
                     }
                     .map_err(|err| SOCKS5Error::IOError { error: err })?;
@@ -594,10 +590,7 @@ where
                             error!(target: "socks5-protocol",
                                    "impossible case: reply buffer too short");
 
-                            Err(Error::new(
-                                ErrorKind::Other,
-                                "internal protocol error"
-                            ))
+                            Err(Error::other("internal protocol error"))
                         }
                     }
                     .map_err(|err| SOCKS5Error::IOError { error: err })?;
@@ -1030,7 +1023,7 @@ pub fn prepare_udp_payload(
 ) -> Result<Vec<u8>, SOCKS5WrapError> {
     let port = endpoint.port();
 
-    match endpoint.ip_endpoint() {
+    match endpoint.ip_addr() {
         IPEndpointAddr::Addr(IpAddr::V4(addr)) => {
             let mut buf = Vec::with_capacity(data.len() + 10);
 

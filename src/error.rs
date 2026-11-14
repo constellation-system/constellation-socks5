@@ -1,4 +1,4 @@
-// Copyright © 2024-25 The Johns Hopkins Applied Physics Laboratory LLC.
+// Copyright © 2024-26 The Johns Hopkins Applied Physics Laboratory LLC.
 //
 // This program is free software: you can redistribute it and/or
 // modify it under the terms of the GNU Affero General Public License,
@@ -22,7 +22,9 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;
 
+use constellation_common::error::CompletableIOError;
 use constellation_common::error::ErrorScope;
+use constellation_common::error::RecoverableError;
 use constellation_common::error::ScopedError;
 
 /// Errors that can occur in the SOCKS5 negotiation protocol.
@@ -157,6 +159,26 @@ pub enum SOCKS5WrapError {
     TooShort,
     /// Mutex was poisoned.
     MutexPoison
+}
+
+impl RecoverableError for SOCKS5Error {
+    type Completable = CompletableIOError;
+    type Permanent = Self;
+
+    #[inline]
+    fn split(self) -> (Option<CompletableIOError>, Option<Self>) {
+        match self {
+            SOCKS5Error::IOError { error } => {
+                let (completable, permanent) = error.split();
+
+                (
+                    completable,
+                    permanent.map(|err| SOCKS5Error::IOError { error: err })
+                )
+            }
+            out => (None, Some(out))
+        }
+    }
 }
 
 impl<Inner> ScopedError for SOCKS5UDPError<Inner>

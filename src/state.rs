@@ -1,4 +1,4 @@
-// Copyright © 2024-25 The Johns Hopkins Applied Physics Laboratory LLC.
+// Copyright © 2024-26 The Johns Hopkins Applied Physics Laboratory LLC.
 //
 // This program is free software: you can redistribute it and/or
 // modify it under the terms of the GNU Affero General Public License,
@@ -27,7 +27,6 @@
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::io::Error;
-use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 #[cfg(feature = "gssapi")]
@@ -164,16 +163,21 @@ impl SOCKS5Result {
     #[inline]
     pub fn wrap_stream<Stream>(
         self,
-        stream: Stream
+        stream: Stream,
+        addr: IPEndpoint
     ) -> SOCKS5Stream<Stream>
     where
         Stream: Read + Write {
         match self.ctx {
             Some(ctx) => SOCKS5Stream::GSSAPI {
                 ctx: ctx,
-                stream: stream
+                stream: stream,
+                peer_addr: addr
             },
-            None => SOCKS5Stream::Passthru { stream: stream }
+            None => SOCKS5Stream::Passthru {
+                stream: stream,
+                peer_addr: addr
+            }
         }
     }
 
@@ -334,10 +338,7 @@ impl RawMachineState for SOCKS5State {
                                    "but no config is present"));
 
                     Err(SOCKS5Error::IOError {
-                        error: Error::new(
-                            ErrorKind::Other,
-                            "internal state machine error"
-                        )
+                        error: Error::other("internal state machine error")
                     })
                 }
             },
@@ -362,10 +363,7 @@ impl RawMachineState for SOCKS5State {
                                    "but no config is present"));
 
                     Err(SOCKS5Error::IOError {
-                        error: Error::new(
-                            ErrorKind::Other,
-                            "internal state machine error"
-                        )
+                        error: Error::other("internal state machine error")
                     })
                 }
             },
@@ -494,10 +492,7 @@ impl RawMachineState for SOCKS5State {
                                    "but no config is present"));
 
                         Err(SOCKS5Error::IOError {
-                            error: Error::new(
-                                ErrorKind::Other,
-                                "internal state machine error"
-                            )
+                            error: Error::other("internal state machine error")
                         })
                     }
                 }
@@ -527,10 +522,7 @@ impl RawMachineState for SOCKS5State {
                                    "but no config is present"));
 
                     Err(SOCKS5Error::IOError {
-                        error: Error::new(
-                            ErrorKind::Other,
-                            "internal state machine error"
-                        )
+                        error: Error::other("internal state machine error")
                     })
                 }
             },
